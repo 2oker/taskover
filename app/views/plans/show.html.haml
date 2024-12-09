@@ -5,6 +5,8 @@
   .plan-operations
     %i.icon-trash.has-tooltip.danger-opeartion{ title: '删除此计划项', 'data-toggle' => 'tooltip', 'data-placement' => 'right',
                                                 'data-toggle' => 'modal', 'data-target' => '.delete_plan_modal' }
+    %i.icon-undo.has-tooltip.danger-opeartion{ title: '恢复此计划项', 'data-toggle' => 'tooltip', 'data-placement' => 'right',
+                                                'v-on:click' => 'restorePlan' }
   .delete_plan_modal.modal.fade{'aria-hidden' => 'true', :role => 'dialog', :tabindex => '-1'}
     .modal-dialog
       .modal-content
@@ -248,6 +250,17 @@
         xhr.onload = function () {
           result = JSON.parse(xhr.responseText)
           $('.delete_plan_modal').modal('hide')
+          notifyTop(result.message)
+          setTimeout(function(){window.location="/";}, 2000);
+        }
+        xhr.send()
+      },
+      restorePlan: function() {
+        var xhr = new XMLHttpRequest()
+        xhr.open("PUT", PlanUrl + '/restore.json')
+        xhr.setRequestHeader("Content-type","application/x-www-form-urlencoded")
+        xhr.onload = function () {
+          result = JSON.parse(xhr.responseText)
           notifyTop(result.message)
           setTimeout(function(){window.location="/";}, 2000);
         }

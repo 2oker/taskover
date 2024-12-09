@@ -9,9 +9,11 @@ Rails.application.routes.draw do
   resources :plans, path: :p do
     collection do
       put 'update_sort'
+      get 'recycle_bin'
     end
     member do
       put 'update_task_sort'
+      put 'restore'
     end
     resources :lists, only: [:new, :create, :update, :destroy] do
       collection do

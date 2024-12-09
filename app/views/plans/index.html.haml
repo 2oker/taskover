@@ -22,8 +22,27 @@
     .bs-callout.bs-callout-add#add-plan-entry{ 'v-on:click' => 'newPlan()' }
       %i.icon-plus.bs-callout-add-icon
 
+.row#recycle-bin
+  .col-md-12
+    %h3
+      回收站 ({{recycleBinCount}})
+      %button.btn.btn-sm.btn-default{ 'v-on:click' => 'toggleRecycleBin()' }
+        {{recycleBinVisible ? '收起' : '展开'}}
+    .recycle-bin-content{ 'v-show' => 'recycleBinVisible' }
+      %draggable{':list' => "recycleBinData", ':options' => "{ animation: 150, 'handle': '.plan-item' }"}
+        .col-md-3{'v-for' => 'plan in recycleBinData', ':key'=> 'plan.ident'}
+          .plan-item{':value' => 'plan.path'}
+            %a{':href' => 'plan.path'}
+              .bs-callout{':class' => 'plan.color_tag_class'}
+                %h4
+                  {{plan.title}}
+                %p
+                  {{plan.description}}
+            %i.icon-undo.has-tooltip.modify-plan{ title: '恢复此计划项', 'v-on:click' => 'restorePlan(plan.ident)' }
+
 :javascript
   var PlanUrl = '/p.json'
+  var RecycleBinUrl = '/plans/recycle_bin.json'
   var plans_list = new Vue({
     el: '#app',
     data: {
@@ -41,11 +60,14 @@
         color_tag_class: '',
         path: ''
       }],
+      recycleBin: [],
       newPlanField: false,
-      colorFilter: ''
+      colorFilter: '',
+      recycleBinVisible: false
     },
     created: function () {
       this.fetchData()
+      this.fetchRecycleBinData()
     },
     beforeUpdate: function () {
       $('.overlay-loading').hide()
@@ -65,6 +87,12 @@
           }
           return filterArray
         }
+      },
+      recycleBinCount: function() {
+        return this.recycleBin.length
+      },
+      recycleBinData: function() {
+        return this.recycleBin
       }
     },
     methods: {
@@ -74,6 +102,15 @@
         xhr.open('GET', PlanUrl)
         xhr.onload = function () {
           self.plans = JSON.parse(xhr.responseText)
+        }
+        xhr.send()
+      },
+      fetchRecycleBinData: function () {
+        var xhr = new XMLHttpRequest()
+        var self = this
+        xhr.open('GET', RecycleBinUrl)
+        xhr.onload = function () {
+          self.recycleBin = JSON.parse(xhr.responseText)
         }
         xhr.send()
       },
@@ -161,6 +198,23 @@
         xhr.open("PUT", updateSortUrl)
         xhr.setRequestHeader("Content-type","application/x-www-form-urlencoded")
         xhr.send( "sort=" + sort )
+      },
+      toggleRecycleBin: function() {
+        this.recycleBinVisible = !this.recycleBinVisible
+      },
+      restorePlan: function(ident) {
+        var xhr = new XMLHttpRequest()
+        var self = this
+        var url = '/plans/' + ident + '/restore.json'
+        xhr.open("PUT", url)
+        xhr.setRequestHeader("Content-type","application/x-www-form-urlencoded")
+        xhr.onload = function () {
+          result = JSON.parse(xhr.responseText)
+          notifyTop(result.message)
+          self.fetchData()
+          self.fetchRecycleBinData()
+        }
+        xhr.send()
       }
     }
   })

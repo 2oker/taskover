@@ -1,12 +1,12 @@
 class PlansController < ApplicationController
   before_action :authenticate_user!
-  before_action :set_plan, only: [:show, :update, :destroy, :update_task_sort]
+  before_action :set_plan, only: [:show, :update, :destroy, :update_task_sort, :restore]
 
   # GET /p.json
   def index
     if json_request?
       sort = current_user.plan_sort.nil? ? current_user.plans.pluck(:id) : current_user.plan_sort.sort
-      @plans = current_user.plans.sort_by{|e| sort.index(e.id)}
+      @plans = current_user.plans.not_deleted.sort_by{|e| sort.index(e.id)}
     end
   end
 
@@ -72,11 +72,22 @@ class PlansController < ApplicationController
     end
   end
 
-
   # DELETE /plans/1.json
   def destroy
-    @plan.destroy
-    render json: {status: 'success', message: '删除成功，正在返回首页...'}
+    @plan.move_to_recycle_bin
+    render json: {status: 'success', message: '已移至回收站'}
+  end
+
+  # PATCH/PUT /plans/1/restore.json
+  def restore
+    @plan.restore
+    render json: {status: 'success', message: '恢复成功'}
+  end
+
+  # GET /plans/recycle_bin.json
+  def recycle_bin
+    @plans = current_user.plans.where.not(deleted_at: nil)
+    render json: @plans
   end
 
   private
