@@ -10,6 +10,7 @@
 #  color_tag   :integer          default(0)
 #  ident       :string(255)      not null
 #  user_id     :integer          not null
+#  deleted_at  :datetime
 #
 
 class Plan < ActiveRecord::Base
@@ -25,6 +26,7 @@ class Plan < ActiveRecord::Base
   validates :ident, uniqueness: true, presence: true
 
   scope :with_color_tag, -> (color_tag) { where(color_tag: color_tag) }
+  scope :not_deleted, -> { where(deleted_at: nil) }
 
   after_create :add_sort
   after_destroy :delete_sort
@@ -62,5 +64,13 @@ class Plan < ActiveRecord::Base
       plan_sort.sort.delete(id)
       plan_sort.save
     end
+  end
+
+  def move_to_recycle_bin
+    update(deleted_at: Time.current)
+  end
+
+  def restore
+    update(deleted_at: nil)
   end
 end
